@@ -2,7 +2,7 @@ name: Auto Mirror Release
 
 on:
   schedule:
-    - cron: '0 * * * *'  # 每小时自动检查
+    - cron: '*/5 * * * *'  # 每小时自动检查
   workflow_dispatch:     # 支持手动触发
 
 jobs:
