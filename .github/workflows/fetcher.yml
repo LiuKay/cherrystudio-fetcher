@@ -2,22 +2,20 @@ name: Auto Mirror Release
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # 每小时自动检查
-  workflow_dispatch:     # 支持手动触发
+    - cron: '0 */1 * * *'  # 改为每小时执行一次，避免过于频繁
+  workflow_dispatch:
 
 jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-    # 记录当前版本
     - name: Checkout current version
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    # 获取存储的最新版本号
     - name: Get stored version
-      id: version
+      id: get_version
       run: |
         if [ -f version.txt ]; then
           echo "CURRENT_VERSION=$(cat version.txt)" >> $GITHUB_ENV
@@ -25,27 +23,45 @@ jobs:
           echo "CURRENT_VERSION=v0.0.0" >> $GITHUB_ENV
         fi
 
-    # 查询目标仓库最新release
     - name: Fetch latest release
+      id: fetch_release
       env: 
-        TARGET_REPO: "CherryHQ/cherry-studio"  # 改为目标仓库
+        TARGET_REPO: "CherryHQ/cherry-studio"
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: |
-        LATEST=$(curl -s "https://api.github.com/repos/$TARGET_REPO/releases/latest" | jq -r .tag_name)
+        LATEST=$(curl -sH "Authorization: token $GH_TOKEN" \
+          "https://api.github.com/repos/$TARGET_REPO/releases/latest" | jq -r .tag_name)
         echo "LATEST_VERSION=$LATEST" >> $GITHUB_ENV
-        echo "Is new: $([ "$LATEST" != "$CURRENT_VERSION" ] && echo 'true' || echo 'false')"
+        echo "Latest version: $LATEST"
 
-    # 检测到新版本时执行
     - name: Process new release
       if: env.LATEST_VERSION != env.CURRENT_VERSION
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: |
-        # 下载exe文件
-        ASSET_URL=$(curl -s "https://api.github.com/repos/CherryHQ/cherry-studio/releases/latest" | \
-          jq -r '.assets[] | select(.name | endswith(".exe")).browser_download_url')
+        # 创建临时目录
+        mkdir -p temp
+        cd temp
         
-        curl -LOJ "$ASSET_URL"
+        # 下载exe文件
+        curl -sH "Authorization: token $GH_TOKEN" \
+          "https://api.github.com/repos/CherryHQ/cherry-studio/releases/latest" | \
+          jq -r '.assets[] | select(.name | endswith(".exe")).browser_download_url' | \
+          while read url; do
+            wget -q "$url"
+          done
 
+        ls .
         # 压缩文件
-        find . -name "*.exe" -exec zip {}.zip {} \;
+        for exe in *.exe; do
+          [ -f "$exe" ] || continue
+          zip "${exe%.exe}.zip" "$exe"
+        done
+
+        # 移动zip文件到主目录
+        mv *.zip ..
+        cd ..
+        rm -rf temp
 
         # 更新版本记录
         echo "$LATEST_VERSION" > version.txt
@@ -54,16 +70,16 @@ jobs:
         git config --global user.name "LiuKay"
         git config --global user.email "passionno1@qq.com"
         git add version.txt *.zip
-        git commit -m "Mirror $LATEST_VERSION"
+        git commit -m "Mirror release $LATEST_VERSION"
         git push
 
-    # 创建Release
-    - name: Publish Release
+    - name: Create Release
       if: env.LATEST_VERSION != env.CURRENT_VERSION
       uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
       with:
         tag_name: ${{ env.LATEST_VERSION }}
-        files: |
-          *.zip
+        name: "Mirror Release ${{ env.LATEST_VERSION }}"
+        body: "Mirrored from CherryHQ/cherry-studio ${{ env.LATEST_VERSION }}"
+        files: "*.zip"
