@@ -39,7 +39,7 @@ jobs:
       if: env.LATEST_VERSION != env.CURRENT_VERSION
       run: |
         # 下载exe文件
-        ASSET_URL=$(curl -s "https://api.github.com/repos/$TARGET_REPO/releases/latest" | \
+        ASSET_URL=$(curl -s "https://api.github.com/repos/CherryHQ/cherry-studio/releases/latest" | \
           jq -r '.assets[] | select(.name | endswith(".exe")).browser_download_url')
         
         curl -LOJ "$ASSET_URL"
