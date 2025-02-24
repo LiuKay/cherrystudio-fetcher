@@ -2,7 +2,7 @@ name: Auto Mirror Release
 
 on:
   schedule:
-    - cron: '0 */1 * * *'  # 改为每小时执行一次，避免过于频繁
+    - cron: '0 0 */1 * *'  
   workflow_dispatch:
 
 jobs:
@@ -53,7 +53,7 @@ jobs:
 
         ls .
         # 压缩文件
-        for exe in *.exe; do
+        for exe in *-setup.exe; do
           [ -f "$exe" ] || continue
           zip "${exe%.exe}.zip" "$exe"
         done
