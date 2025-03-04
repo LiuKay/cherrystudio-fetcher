@@ -66,10 +66,12 @@ jobs:
         # 更新版本记录
         echo "$LATEST_VERSION" > version.txt
 
+        find . -name "*.zip" -type f | grep -v -- "-${VERSION}-portable\.zip$" | xargs -r rm -f
+
         # 提交变更
         git config --global user.name "LiuKay"
         git config --global user.email "passionno1@qq.com"
-        git add version.txt *.zip
+        git add -A
         git commit -m "Mirror release $LATEST_VERSION"
         git push
 
