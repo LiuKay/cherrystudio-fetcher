@@ -46,14 +46,14 @@ jobs:
         # 下载exe文件
         curl -sH "Authorization: token $GH_TOKEN" \
           "https://api.github.com/repos/CherryHQ/cherry-studio/releases/latest" | \
-          jq -r '.assets[] | select(.name | endswith(".exe")).browser_download_url' | \
+          jq -r '.assets[] | select(.name | endswith("-portable.exe")).browser_download_url' | \
           while read url; do
             wget -q "$url"
           done
 
         ls .
         # 压缩文件
-        for exe in *-setup.exe; do
+        for exe in *.exe; do
           [ -f "$exe" ] || continue
           zip "${exe%.exe}.zip" "$exe"
         done
