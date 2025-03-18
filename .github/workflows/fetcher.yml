@@ -72,10 +72,14 @@ jobs:
         echo "$LATEST_VERSION" > version.txt
 
         # 删除旧的zip文件
+        # 提取不带v前缀的版本号
+        VERSION_WITHOUT_V="${LATEST_VERSION#v}"
         for zip in *.zip; do
-          if [[ "$zip" != *"${LATEST_VERSION}"* ]]; then
+          if [[ "$zip" != *"${VERSION_WITHOUT_V}"* ]]; then
             echo "Deleting old zip file: $zip"
             rm -f "$zip"
+          else
+            echo "Keeping latest zip file: $zip"
           fi
         done
 
