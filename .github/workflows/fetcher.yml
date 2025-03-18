@@ -51,10 +51,14 @@ jobs:
             wget -q "$url"
           done
 
-        ls .
+        # 检查是否成功下载文件
+        if ! ls *.exe >/dev/null 2>&1; then
+          echo "No exe files downloaded!"
+          exit 1
+        fi
+
         # 压缩文件
         for exe in *.exe; do
-          [ -f "$exe" ] || continue
           zip "${exe%.exe}.zip" "$exe"
         done
 
@@ -66,7 +70,8 @@ jobs:
         # 更新版本记录
         echo "$LATEST_VERSION" > version.txt
 
-        find . -name "*.zip" -type f | grep -v -- "-${VERSION}-portable\.zip$" | xargs -r rm -f
+        # 删除旧的zip文件（修复了VERSION变量的问题）
+        find . -name "*.zip" -type f | grep -v "${LATEST_VERSION}" | xargs -r rm -f
 
         # 提交变更
         git config --global user.name "LiuKay"
