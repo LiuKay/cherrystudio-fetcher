@@ -59,6 +59,7 @@ jobs:
 
         # 压缩文件
         for exe in *.exe; do
+          echo "Compressing $exe"
           zip "${exe%.exe}.zip" "$exe"
         done
 
@@ -70,8 +71,13 @@ jobs:
         # 更新版本记录
         echo "$LATEST_VERSION" > version.txt
 
-        # 删除旧的zip文件（修复了VERSION变量的问题）
-        find . -name "*.zip" -type f | grep -v "${LATEST_VERSION}" | xargs -r rm -f
+        # 删除旧的zip文件
+        for zip in *.zip; do
+          if [[ "$zip" != *"${LATEST_VERSION}"* ]]; then
+            echo "Deleting old zip file: $zip"
+            rm -f "$zip"
+          fi
+        done
 
         # 提交变更
         git config --global user.name "LiuKay"
